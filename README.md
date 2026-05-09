@@ -1,4 +1,4 @@
-# PhishGuard: Real-Time YouTube Live Chat Threat Detection
+# YOUTUBE GUARDIAN: Real-Time YouTube Live Chat Threat Detection
 
 ## Overview
 
