@@ -42,6 +42,88 @@ async def check_virustotal(url: str) -> bool:
         pass
     return False
 
+from urllib.parse import urlparse
+
+# High-risk TLDs commonly used in phishing campaigns
+SUSPICIOUS_TLDS = {
+    'xyz', 'tk', 'ml', 'ga', 'cf', 'gq', 'club', 'top', 'info', 
+    'click', 'link', 'online', 'free', 'gift', 'claims', 'support',
+    'win', 'loan', 'gdn', 'bid', 'download', 'party', 'date', 'stream'
+}
+
+# Brands commonly targeted by scammers on YouTube
+TARGETED_BRANDS = ['youtube', 'google', 'steam', 'discord', 'telegram', 'metamask', 'binance', 'crypto', 'wallet', 'coinbase']
+
+def analyze_url_lexical(url: str) -> Dict[str, Any]:
+    """Analyzes a URL for suspicious lexical features (zero-dependency)."""
+    score_bump = 0.0
+    reasons = []
+    
+    try:
+        parsed = urlparse(url.lower())
+        domain = parsed.netloc.split(':')[0]  # remove port if any
+        
+        if not domain:
+            return {"score_bump": 0.0, "reasons": []}
+            
+        # 1. Suspicious TLD check
+        tld = domain.split('.')[-1]
+        if tld in SUSPICIOUS_TLDS:
+            score_bump += 0.3
+            reasons.append(f"Uses suspicious top-level domain (.{tld})")
+            
+        # 2. Too many subdomains (lookalike / tunneling)
+        subdomains = domain.split('.')[:-2]  # exclude domain and TLD
+        if len(subdomains) >= 3:
+            score_bump += 0.25
+            reasons.append("Excessive subdomains (potential tunneling)")
+            
+        # 3. Lookalike / Brand hijacking check
+        official_domains = {
+            'youtube': ['youtube.com', 'youtu.be', 'youtube-nocookie.com'],
+            'google': ['google.com', 'gmail.com'],
+            'steam': ['steamcommunity.com', 'steampowered.com', 'valvesoftware.com'],
+            'discord': ['discord.com', 'discord.gg', 'discordapp.com'],
+            'telegram': ['telegram.org', 't.me'],
+            'metamask': ['metamask.io'],
+            'binance': ['binance.com', 'binance.org'],
+            'coinbase': ['coinbase.com']
+        }
+        
+        for brand in TARGETED_BRANDS:
+            if brand in domain:
+                is_official = False
+                for off_dom in official_domains.get(brand, [f"{brand}.com"]):
+                    if domain == off_dom or domain.endswith('.' + off_dom):
+                        is_official = True
+                        break
+                
+                if not is_official:
+                    score_bump += 0.4
+                    reasons.append(f"Contains brand name '{brand}' on an unofficial domain")
+                    
+        # 4. Obfuscation check (presence of '@' in credentials)
+        if '@' in parsed.netloc or '@' in parsed.path:
+            score_bump += 0.4
+            reasons.append("URL contains '@' user-info obfuscation")
+            
+        # 5. Lookalike character replacements (Homograph/Leetspeak)
+        homoglyphs = [('0', 'o'), ('1', 'l'), ('1', 'i'), ('3', 'e'), ('4', 'a'), ('5', 's')]
+        for source, replacement in homoglyphs:
+            for brand in TARGETED_BRANDS:
+                variant = brand.replace(replacement, source)
+                if variant != brand and variant in domain:
+                    score_bump += 0.35
+                    reasons.append(f"Uses character replacements mimicking brand '{brand}'")
+                    
+    except Exception:
+        pass
+        
+    return {
+        "score_bump": min(score_bump, 0.8),
+        "reasons": reasons
+    }
+
 async def analyze_message(username: str, message: str) -> Dict[str, Any]:
     text_lower = message.lower()
     urls = extract_urls(message)
@@ -55,13 +137,19 @@ async def analyze_message(username: str, message: str) -> Dict[str, Any]:
         score += min(0.3 * keyword_count, 0.6)
         reasons.append(f"Contains {keyword_count} suspicious keyword(s)")
         
-    # 2. URL presence
+    # 2. URL presence & analysis
     if urls:
         score += 0.2
         reasons.append("Contains URL(s)")
         
-        # 3. URL Reputation Check (VirusTotal)
         for url in urls:
+            # 3. Lexical URL analysis
+            lexical_result = analyze_url_lexical(url)
+            if lexical_result["score_bump"] > 0:
+                score += lexical_result["score_bump"]
+                reasons.extend(lexical_result["reasons"])
+            
+            # 4. URL Reputation Check (VirusTotal)
             is_malicious = await check_virustotal(url)
             if is_malicious:
                 score += 0.8 # Critical bump
