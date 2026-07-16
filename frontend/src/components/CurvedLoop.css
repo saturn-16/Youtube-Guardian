@@ -1,0 +1,27 @@
+.curved-loop-jacket {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  margin-left: 50%;
+  transform: translateX(-50%);
+  height: 240px;
+  overflow: hidden;
+  position: relative;
+}
+
+.curved-loop-svg {
+  user-select: none;
+  width: 100%;
+  aspect-ratio: 1440 / 240;
+  overflow: visible;
+  display: block;
+  font-size: 2.8rem;
+  fill: var(--accent);
+  text-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+  font-weight: 900;
+  text-transform: uppercase;
+  line-height: 1;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 3px;
+}
