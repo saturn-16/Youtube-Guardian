@@ -157,7 +157,19 @@ const Landing = ({ onLaunchDashboard }) => {
             </FuzzyText>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {user && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid var(--border)', padding: '6px 12px', borderRadius: '20px', background: 'rgba(255,255,255,0.03)', marginRight: '4px' }}>
+              {user.photoURL ? (
+                <img src={user.photoURL} alt="avatar" style={{ width: '18px', height: '18px', borderRadius: '50%' }} />
+              ) : (
+                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 'bold' }}>
+                  {user.displayName ? user.displayName[0].toUpperCase() : 'U'}
+                </div>
+              )}
+              <span style={{ fontSize: '11px', color: 'var(--text)', fontWeight: '500' }}>{user.displayName || user.email}</span>
+            </div>
+          )}
           <a
             href="https://github.com/saturn-16/Youtube-Guardian"
             target="_blank"

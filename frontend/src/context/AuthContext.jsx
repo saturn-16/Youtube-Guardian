@@ -6,7 +6,9 @@ import {
   GoogleAuthProvider,
   GithubAuthProvider,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  setPersistence,
+  browserSessionPersistence
 } from 'firebase/auth';
 
 const AuthContext = createContext(null);
@@ -30,6 +32,9 @@ let auth;
 if (isConfigured) {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
+  setPersistence(auth, browserSessionPersistence).catch((err) => {
+    console.error("Firebase persistence configuration failed:", err);
+  });
 }
 
 export const AuthProvider = ({ children }) => {
