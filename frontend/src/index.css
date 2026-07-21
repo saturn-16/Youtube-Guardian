@@ -55,7 +55,7 @@ header {
   padding: 16px 24px;
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
-  position: relative; z-index: 10;
+  position: relative; z-index: 20;
 }
 .logo { display: flex; align-items: center; gap: 12px; }
 .logo-icon {
