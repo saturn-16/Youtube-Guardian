@@ -37,6 +37,20 @@ const Landing = ({ onLaunchDashboard }) => {
   const { user, logout } = useAuth();
   const [wowState, setWowState] = useState(0); // 0: safe message, 1: suspicious message, 2: blocked
   const proximityContainerRef = useRef(null);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowUserDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Auto-cycle the "Wow" visualization section
   useEffect(() => {
@@ -159,7 +173,31 @@ const Landing = ({ onLaunchDashboard }) => {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {user && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid var(--border)', padding: '6px 12px', borderRadius: '20px', background: 'rgba(255,255,255,0.03)', marginRight: '4px' }}>
+            <div 
+              ref={dropdownRef}
+              onClick={() => setShowUserDropdown(!showUserDropdown)}
+              style={{ 
+                position: 'relative', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px', 
+                border: showUserDropdown ? '1px solid var(--accent)' : '1px solid var(--border)', 
+                padding: '6px 12px', 
+                borderRadius: '20px', 
+                background: 'rgba(255,255,255,0.03)', 
+                marginRight: '4px',
+                cursor: 'pointer',
+                userSelect: 'none',
+                transition: 'all 0.2s',
+                zIndex: showUserDropdown ? 1001 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (!showUserDropdown) e.currentTarget.style.borderColor = 'rgba(0, 212, 255, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                if (!showUserDropdown) e.currentTarget.style.borderColor = 'var(--border)';
+              }}
+            >
               {user.photoURL ? (
                 <img src={user.photoURL} alt="avatar" style={{ width: '18px', height: '18px', borderRadius: '50%' }} />
               ) : (
@@ -168,6 +206,56 @@ const Landing = ({ onLaunchDashboard }) => {
                 </div>
               )}
               <span style={{ fontSize: '11px', color: 'var(--text)', fontWeight: '500' }}>{user.displayName || user.email}</span>
+              
+              {showUserDropdown && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 8px)',
+                    right: '0',
+                    background: 'rgba(13, 19, 24, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '6px',
+                    padding: '4px',
+                    zIndex: 1000,
+                    minWidth: '120px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                    animation: 'fadeIn 0.15s ease-out'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={logout}
+                    style={{
+                      width: '100%',
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--text2)',
+                      cursor: 'pointer',
+                      padding: '8px 12px',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '11px',
+                      textAlign: 'left',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(244,67,54,0.1)';
+                      e.currentTarget.style.color = 'var(--high)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = 'var(--text2)';
+                    }}
+                  >
+                    <LogOut size={12} />
+                    Sign Out
+                  </button>
+                </div>
+              )}
             </div>
           )}
           <a
@@ -186,13 +274,6 @@ const Landing = ({ onLaunchDashboard }) => {
           >
             <LayoutDashboard size={14} />
             Monitor Panel
-          </button>
-          <button
-            onClick={logout}
-            style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text2)', cursor: 'pointer', padding: '10px 16px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', transition: 'all 0.2s' }}
-          >
-            <LogOut size={12} />
-            Sign Out
           </button>
         </div>
       </header>

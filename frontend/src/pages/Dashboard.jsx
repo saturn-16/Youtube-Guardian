@@ -350,7 +350,8 @@ const Dashboard = ({ onBackToLanding }) => {
                   border: showUserDropdown ? '1px solid var(--accent)' : '1px solid var(--border)', 
                   cursor: 'pointer',
                   userSelect: 'none',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
+                  zIndex: showUserDropdown ? 1001 : 1
                 }}
                 onMouseEnter={(e) => {
                   if (!showUserDropdown) e.currentTarget.style.borderColor = 'rgba(0, 212, 255, 0.4)';
