@@ -36,6 +36,20 @@ const Dashboard = ({ onBackToLanding }) => {
   const wsRef = useRef(null);
   const chatFeedRef = useRef(null);
   const flaggedFeedRef = useRef(null);
+  const dropdownRef = useRef(null);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowUserDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // ── YOUTUBE URL → VIDEO ID EXTRACTION ──
   const extractVideoId = (input) => {
@@ -322,13 +336,85 @@ const Dashboard = ({ onBackToLanding }) => {
           </div>
           <div className="header-right">
             {user && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.03)', padding: '4px 12px', borderRadius: '20px', border: '1px solid var(--border)' }}>
+              <div 
+                ref={dropdownRef}
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                style={{ 
+                  position: 'relative', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '10px', 
+                  background: 'rgba(255,255,255,0.03)', 
+                  padding: '4px 12px', 
+                  borderRadius: '20px', 
+                  border: showUserDropdown ? '1px solid var(--accent)' : '1px solid var(--border)', 
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (!showUserDropdown) e.currentTarget.style.borderColor = 'rgba(0, 212, 255, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!showUserDropdown) e.currentTarget.style.borderColor = 'var(--border)';
+                }}
+              >
                 <img
                   src={user.photoURL || 'https://www.gravatar.com/avatar/?d=mp'}
                   alt="Profile"
                   style={{ width: '22px', height: '22px', borderRadius: '50%', border: '1px solid var(--accent)' }}
                 />
                 <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text)' }}>{user.displayName || 'Security Operator'}</span>
+                
+                {showUserDropdown && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 8px)',
+                      right: '0',
+                      background: 'rgba(13, 19, 24, 0.95)',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '6px',
+                      padding: '4px',
+                      zIndex: 1000,
+                      minWidth: '120px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                      animation: 'fadeIn 0.15s ease-out'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      onClick={logout}
+                      style={{
+                        width: '100%',
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text2)',
+                        cursor: 'pointer',
+                        padding: '8px 12px',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '11px',
+                        textAlign: 'left',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(244,67,54,0.1)';
+                        e.currentTarget.style.color = 'var(--high)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = 'var(--text2)';
+                      }}
+                    >
+                      <LogOut size={12} />
+                      Sign Out
+                    </button>
+                  </div>
+                )}
               </div>
             )}
             <div className="stat-chip">Total Checked: <b style={{ color: 'var(--accent)' }}>{stats.total}</b></div>
@@ -347,16 +433,6 @@ const Dashboard = ({ onBackToLanding }) => {
             >
               <Home size={12} />
               Home
-            </button>
-
-            <button
-              onClick={logout}
-              style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text2)', cursor: 'pointer', padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', transition: 'all 0.2s' }}
-              onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--high)'}
-              onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
-            >
-              <LogOut size={12} />
-              Sign Out
             </button>
           </div>
         </header>
@@ -446,12 +522,44 @@ const Dashboard = ({ onBackToLanding }) => {
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', borderRight: '1px solid var(--border)' }}>
             {/* LIVE CHAT STREAM */}
             <div className="panel" style={{ position: 'relative', flex: 1, borderRight: 'none', borderBottom: 'none' }}>
-              <div className="panel-header">
+              <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div className="panel-title">
                   <div className="dot" />
                   LIVE CHAT STREAM
                 </div>
-                <span className="panel-count">{messages.length} messages</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="panel-count">{messages.length} messages</span>
+                  {wsStatus !== 'idle' && (
+                    <button
+                      onClick={stopMonitor}
+                      style={{
+                        background: 'transparent',
+                        border: '1px solid var(--high)',
+                        color: 'var(--high)',
+                        cursor: 'pointer',
+                        padding: '3px 10px',
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontSize: '10px',
+                        fontWeight: 'bold',
+                        transition: 'all 0.2s',
+                        fontFamily: "'JetBrains Mono', monospace"
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(244,67,54,0.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                      }}
+                      title="Stop Scanning"
+                    >
+                      <Square size={10} fill="var(--high)" />
+                      STOP
+                    </button>
+                  )}
+                </div>
               </div>
               
               <div className="panel-body" ref={chatFeedRef} onScroll={handleScroll}>
